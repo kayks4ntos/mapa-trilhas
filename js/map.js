@@ -16,9 +16,9 @@ L.control.scale().addTo(map);
 
 // Ícone personalizado (exemplo: uma montanha)
 var iconeTrilha = L.icon({
-  iconUrl: 'img/montanha.png', // coloque sua imagem aqui (32x32px é um bom tamanho)
+  iconUrl: 'img/icon3.png', // coloque sua imagem aqui (32x32px é um bom tamanho)
   iconSize: [32, 32],
-  iconAnchor: [16, 32], // ponto que "encosta" no chão
+  iconAnchor: [16, 32], // ponto que "encosta" no chão  
   popupAnchor: [0, -32]  // onde o popup aparece em relação ao ícone
 });
 
@@ -63,3 +63,5 @@ map.on('locationfound', onLocationFound);
 map.on('locationerror', function(e) {
   alert("Não foi possível acessar sua localização.");
 });
+// Fazer que o icon mude de forma quando ele fica maior 
+
