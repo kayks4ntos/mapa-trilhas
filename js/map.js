@@ -63,3 +63,17 @@ map.on('locationfound', onLocationFound);
 map.on('locationerror', function(e) {
   alert("Não foi possível acessar sua localização.");
 });
+
+// === GRAVAÇÃO DE DADOS ===
+import { iniciarGravacao, pararGravacao } from './gps.js';
+
+// Eventos dos botões de gravação
+const btnIniciar = document.getElementById('btnIniciar');
+const btnParar = document.getElementById('btnParar');
+
+if (btnIniciar && btnParar) {
+  btnIniciar.addEventListener('click', () => iniciarGravacao(map));
+  btnParar.addEventListener('click', () => pararGravacao());
+} else {
+  console.warn('Botões de gravação não encontrados no DOM.');
+}
