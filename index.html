@@ -1,21 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa-Trilha</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <style>
-    #map {
-      height: 100vh; /* o mapa ocupa toda a tela */
-      width: 100%;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa-Trilha</title>
+
+  <!-- CSS do Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- CSS do plugin de localização -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol@0.78.0/dist/L.Control.Locate.min.css" />
+
+  <style>
+    *{
+      
     }
+    #map { height: 100vh; width: 100%; }
+
+    .leaflet-control-zoom a,
+    .leaflet-control-locate a {
+      background-color: rgba(40, 40, 40, 0.85);
+      color: #fff;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .leaflet-control-zoom a:hover,
+    .leaflet-control-locate a:hover {
+      background-color: #4caf50;
+      color: #fff;
+    }
+
+    .leaflet-control-scale-line {
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+    /* Garante que o seletor de estilo do mapa fique sempre visível */
+    .mapa-control {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 10000; /* garante que fica acima dos outros controles */
+      font-family: Arial, sans-serif;
+    }
+
+    .mapa-control select {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
   </style>
 </head>
 <body>
-    <div id="map"></div>
-    
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="../mapa-trilhas/js/map.js"></script>
+  <div id="map"></div>
+
+  <!-- JS principal do Leaflet -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- JS do plugin (deve vir ANTES do seu map.js) -->
+  <script src="https://unpkg.com/leaflet.locatecontrol@0.78.0/dist/L.Control.Locate.min.js"></script>
+
+  <!-- Seu script do mapa -->
+  <script src="../mapa-trilhas/js/map.js"></script>
 </body>
 </html>
