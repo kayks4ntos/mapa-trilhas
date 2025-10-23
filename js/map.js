@@ -46,6 +46,13 @@ adicionarMarcador(-21.120, -44.250, "Serra do Lenheiro", "Trilha difícil, ideal
 
 // === LOCALIZAÇÃO DO USUÁRIO ===
 // Tenta localizar o usuário (requer permissão)
+// Helpful runtime checks: geolocation and modules require a secure context (http(s) or localhost)
+if (window.location.protocol === 'file:') {
+  alert('Aviso: você abriu os arquivos via file://. Para que geolocalização e fetch funcionem corretamente inicie o servidor local (por exemplo XAMPP) e abra via http://localhost/...');
+} else if (!('geolocation' in navigator)) {
+  alert('Seu navegador não suporta geolocalização.');
+}
+
 map.locate({ setView: true, maxZoom: 16 });
 
 // Quando a localização for encontrada

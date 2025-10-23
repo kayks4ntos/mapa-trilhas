@@ -13,6 +13,15 @@ export function iniciarGravacao(map) {
     alert("A gravação já está em andamento!");
     return;
   }
+  if (!map) {
+    alert('Erro interno: mapa não fornecido para iniciarGravacao.');
+    console.error('iniciarGravacao called without map');
+    return;
+  }
+
+  if (window.location.protocol === 'file:') {
+    alert('⚠️ Aviso: Abra este projeto através de um servidor local (http://localhost/) — recursos como geolocalização e fetch podem falhar em file://');
+  }
 
   gravando = true;
   coordenadas = [];
