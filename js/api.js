@@ -5,12 +5,15 @@ export async function enviarTrilha(nome, autor, coordenadas) {
     if (window.location.protocol === 'file:') {
       alert('Avise: operações de rede podem falhar quando os arquivos são abertos via file://. Use um servidor local (http://localhost/)');
     }
+    // Debug: inspeciona o payload antes do envio
+    console.debug('enviarTrilha payload:', { nome, autor, coordenadasLength: coordenadas?.length ?? 0, primeira: (coordenadas && coordenadas.length>0) ? coordenadas[0] : null });
     const resposta = await fetch("php/salvar_trilha.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nome, autor, coordenadas }),
     });
     const texto = await resposta.text();
+    console.debug('enviarTrilha raw resposta:', texto);
     let dados;
     try {
       dados = JSON.parse(texto);

@@ -68,6 +68,9 @@ export function pararGravacao() {
   gravando = false;
   navigator.geolocation.clearWatch(watchId);
 
+  // Debug: logar informações da rota antes dos prompts
+  console.debug('pararGravacao called — coordenadas.length =', coordenadas.length, 'amostra=', coordenadas.slice(0,5));
+
   const nome = prompt("Nome da trilha:");
   const autor = prompt("Autor da trilha:");
 
