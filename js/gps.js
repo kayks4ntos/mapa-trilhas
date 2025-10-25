@@ -7,6 +7,11 @@ let watchId = null;
 let gravando = false;
 let marcadorUsuario = null;
 
+// --- Configurações de GPS e suavização ---
+const WATCH_OPTIONS = { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 };
+const INTERPOLATION_SEGMENTS = 6; // pontos gerados entre cada par de pontos reais
+const SMOOTHING_WINDOW = 3; // janela para média móvel
+
 // === Inicia gravação de rota ===
 export function iniciarGravacao(map) {
   if (gravando) {
@@ -31,7 +36,7 @@ export function iniciarGravacao(map) {
     watchId = navigator.geolocation.watchPosition(
       (pos) => atualizarPosicao(map, pos),
       (erro) => alert("Erro ao acessar GPS: " + erro.message),
-      { enableHighAccuracy: true, maximumAge: 1000 }
+      WATCH_OPTIONS
     );
     alert("📍 Gravação iniciada!");
   } else {
@@ -39,23 +44,81 @@ export function iniciarGravacao(map) {
   }
 }
 
-// === Atualiza posição e desenha ===
+// === Filtragem simples: média móvel para reduzir jitter ===
+function smoothMovingAverage(points, window = SMOOTHING_WINDOW) {
+  if (points.length < window) return points.slice();
+  const res = [];
+  for (let i = 0; i < points.length; i++) {
+    const start = Math.max(0, i - (window - 1));
+    const end = i;
+    let sumLat = 0, sumLon = 0, cnt = 0;
+    for (let j = start; j <= end; j++) {
+      sumLat += points[j][0];
+      sumLon += points[j][1];
+      cnt++;
+    }
+    res.push([sumLat / cnt, sumLon / cnt]);
+  }
+  return res;
+}
+
+// === Interpolação Catmull-Rom para curvas suaves ===
+function catmullRomSpline(points, segmentsPerPair = INTERPOLATION_SEGMENTS) {
+  if (!points || points.length < 2) return points.slice();
+
+  const out = [];
+  const n = points.length;
+
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+
+    for (let s = 0; s < segmentsPerPair; s++) {
+      const t = s / segmentsPerPair;
+      const t2 = t * t;
+      const t3 = t2 * t;
+
+      const lat = 0.5 * ((-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3 + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + p2[0]) * t + 2 * p1[0]);
+
+      const lon = 0.5 * ((-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3 + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + p2[1]) * t + 2 * p1[1]);
+
+      out.push([lat, lon]);
+    }
+  }
+
+  out.push(points[n - 1]);
+  return out;
+}
+
+// === Atualiza posição e desenha (com suavização + interpolação) ===
 function atualizarPosicao(map, posicao) {
   const { latitude, longitude } = posicao.coords;
   const novaCoord = [latitude, longitude];
   coordenadas.push(novaCoord);
 
-  // Atualiza linha da rota
-  rotaPolyline.addLatLng(novaCoord);
+  // Aplica filtragem simples para reduzir ruído do GPS
+  const filtered = smoothMovingAverage(coordenadas, SMOOTHING_WINDOW);
 
-  // Atualiza marcador de posição atual
-  if (marcadorUsuario) {
-    marcadorUsuario.setLatLng(novaCoord);
-  } else {
-    marcadorUsuario = L.marker(novaCoord).addTo(map);
+  // Aplica interpolação para gerar curvas suaves
+  const smoothedCoords = catmullRomSpline(filtered, INTERPOLATION_SEGMENTS);
+
+  // Atualiza a polyline com os pontos suavizados (mais densos)
+  if (rotaPolyline) {
+    rotaPolyline.setLatLngs(smoothedCoords);
   }
 
-  map.setView(novaCoord, 16);
+  // Atualiza marcador de posição para a última coordenada REAL (ou última filtrada)
+  const ultimaReal = coordenadas[coordenadas.length - 1];
+  if (marcadorUsuario) {
+    marcadorUsuario.setLatLng(ultimaReal);
+  } else {
+    marcadorUsuario = L.marker(ultimaReal).addTo(map);
+  }
+
+  // Centraliza mapa suavemente na posição atual
+  map.setView(ultimaReal, 16);
 }
 
 // === Para gravação e envia rota ===
@@ -75,6 +138,7 @@ export function pararGravacao() {
   const autor = prompt("Autor da trilha:");
 
   if (nome && autor && coordenadas.length > 0) {
+    // Envia as coordenadas REAIS (sem interpolação) para o backend
     enviarTrilha(nome, autor, coordenadas);
   } else {
     alert("⚠️ Dados incompletos ou rota vazia.");
