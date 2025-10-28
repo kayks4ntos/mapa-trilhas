@@ -310,6 +310,9 @@ adicionarMarcador(
         if (window.GpxLoader && typeof window.GpxLoader.updateIconsForTheme === 'function') {
           try { window.GpxLoader.updateIconsForTheme(); } catch (e) { console.warn('Falha ao atualizar ícones GPX:', e); }
         }
+        if (window.GpxRecorder && typeof window.GpxRecorder.updateIconsForTheme === 'function') {
+          try { window.GpxRecorder.updateIconsForTheme(); } catch (e) { console.warn('Falha ao atualizar ícones Recorder:', e); }
+        }
       } catch (err) {
         console.error('Erro ao recarregar marcadores após troca de mapa:', err);
         // mostrar alerta visual para o usuário
