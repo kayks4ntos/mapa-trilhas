@@ -15,8 +15,12 @@
     subdomains: 'abcd',
     maxZoom: 19
   });
-  // Variável opcional para camadas futuras (garante que referências antigas não causem ReferenceError)
-  var darkLayer;
+  // Mapa escuro
+  var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  });
   // 2) Crie o mapa já escolhendo a camada inicial (aqui: normal)
   var map = L.map('map', {
     center: [-21.137, -44.259],
@@ -70,10 +74,16 @@ L.control.scale({
   var controlDiv = L.control({ position: 'topright' });
   controlDiv.onAdd = function () {
     var div = L.DomUtil.create('div', 'mapa-control');
+    // Evita que cliques/scroll no seletor afetem o mapa (zoom/drag)
+    if (L && L.DomEvent) {
+      try { L.DomEvent.disableClickPropagation(div); } catch(e) {}
+      try { L.DomEvent.disableScrollPropagation(div); } catch(e) {}
+    }
     div.innerHTML = `
       <select id="mapSelect" style="padding:4px; border-radius:6px; font-size:14px;">
-        <option value="normal" selected>Allmaps</option>
-        <option value="limpo">Clean maps</option>
+        <option value="normal" selected>Normal</option>
+        <option value="limpo">Limpo</option>
+        <option value="escuro">Escuro</option>
       </select>
     `;
     return div;
@@ -95,6 +105,14 @@ L.control.scale({
     iconSize: [36, 36],
     iconAnchor: [18, 36],
     popupAnchor: [0, -36]
+  });
+
+  // Ícone para o mapa escuro
+  var iconeEscuro = L.icon({
+    iconUrl: 'img/iconescuro.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
   });
 
   // Guarda os marcadores ativos para limpar quando trocar de mapa
@@ -122,6 +140,8 @@ function adicionarMarcador(lat, lon, nome, descricao, linkImg, tipo) {
   if (typeof tipo === 'string') {
     if (tipo === 'limpo') {
       iconeUsado = iconeLimpo;
+    } else if (tipo === 'escuro') {
+      iconeUsado = iconeEscuro;
     } else if (tipo.startsWith('http') || tipo.indexOf('/') === 0 || tipo.startsWith('img/')) {
       // tratamos como URL para ícone
       iconeUsado = L.icon({
@@ -202,77 +222,7 @@ function adicionarMarcador(lat, lon, nome, descricao, linkImg, tipo) {
       // === TRILHAS DE SÃO JOÃO DEL REI ===
   // Adiciona novamente com ícones do tipo selecionado
 
-  adicionarMarcador(
-    -21.1205, -44.2528,
-    "Parque Municipal Serra do Lenheiro - Trilha Lenheiro",
-    "Trilha fácil de 2,6 km (0.5–1 h). Passa por pinturas rupestres, cachoeiras e rica vegetação. Excelente para caminhada leve no parque ecológico.",
-    "https://upload.wikimedia.org/wikipedia/commons/3/3b/Mountain_example.jpg",
-    tipo
-  );
-
-  adicionarMarcador(
-    -21.1308, -44.2701,
-    "Trilha Lenheiro",
-    "Trilha moderada de 11,9 km (3–3,5 h) em torno da Serra do Lenheiro, com vales e formações rochosas. Proporciona belas vistas e contato com a natureza.",
-    "https://upload.wikimedia.org/wikipedia/commons/e/e0/Waterfall_example.jpg",
-    tipo
-  );
-
-  adicionarMarcador(
-    -21.1420, -44.2805,
-    "São João del Rei - Trilha Lenheiro",
-    "Trilha difícil de 15,9 km (5–5,5 h) com subidas íngremes e vistas panorâmicas das serras e vales da região. Ideal para hiking e aventura.",
-    "https://upload.wikimedia.org/wikipedia/commons/a/a6/Hiking_trail_example.jpg",
-    tipo
-  );
-
-  adicionarMarcador(
-    -21.1552, -44.2975,
-    "Tejuco - Serra do Lenheiro",
-    "Trilha moderada de 9,2 km (3–3,5 h) ligando Tejuco à Serra do Lenheiro, passando por áreas naturais preservadas e paisagens montanhosas.",
-    "https://upload.wikimedia.org/wikipedia/commons/d/d3/Mountain_trail_example.jpg",
-    tipo
-  );
-
-  adicionarMarcador(
-    -21.1609, -44.3123,
-    "Torre do Tejuco",
-    "Trilha moderada de 4,8 km (1,5–2 h) com trajeto tranquilo até a torre, oferecendo vista panorâmica da região de São João del Rei.",
-    "https://upload.wikimedia.org/wikipedia/commons/f/f6/Viewpoint_example.jpg",
-    tipo
-  );
-
-  adicionarMarcador(
-    -21.0954, -44.2308,
-    "Balneário Águas Santas - Coronel Xavier Chaves - Mirante Bela Vista",
-    "Trilha moderada e longa (17,9 km / 5–5,5 h) que liga o Balneário Águas Santas ao Mirante Bela Vista, com belas paisagens e natureza abundante.",
-    "https://upload.wikimedia.org/wikipedia/commons/c/c5/Nature_trail_example.jpg",
-    tipo
-  );
-
-  adicionarMarcador(
-    -21.1242, -44.2450,
-    "Cachoeira Serra do Lenheiro",
-    "Trilha curta de 1,9 km (0.5–1 h) até a cachoeira da Serra do Lenheiro. Caminho fácil, ideal para banho e contemplação, com pedras escorregadias.",
-    "https://upload.wikimedia.org/wikipedia/commons/8/8c/Waterfall_pool_example.jpg",
-    tipo
-  );
-
-  adicionarMarcador(
-    -21.1098, -44.2552,
-    "Senhor dos Montes - Cunha - Povoado do Fé",
-    "Trilha moderada de 12,4 km (3,5–4 h) em circuito, passando pelo Parque Serra do Lenheiro e Povoado do Fé. Pode ser feita a pé ou de bicicleta.",
-    "https://upload.wikimedia.org/wikipedia/commons/9/98/Trekking_example.jpg",
-    tipo
-  );
-
-  adicionarMarcador(
-    -21.1333, -44.2501,
-    "Mensageiros de Cristo",
-    "Trilha fácil de 1,9 km (0.5–1 h), ideal para passeio leve e caminhada em meio à natureza. Boa opção para iniciantes.",
-    "https://upload.wikimedia.org/wikipedia/commons/f/f1/Forest_path_example.jpg",
-    tipo
-  );
+  
   // Senac com ícone customizado (local em img/senac.png) - use URL alternativa se não existir
 adicionarMarcador(
   -21.1348062,
@@ -291,8 +241,8 @@ adicionarMarcador(
   
     // Atualiza painel de status com info de camada e contagem
     try {
-      var active = (map.hasLayer(limpoLayer) ? 'limpo' : 'normal');
-      statusDiv.innerText = 'Camada: ' + active + ' — Marcadores: ' + marcadores.length;
+      var active = (map.hasLayer(darkLayer) ? 'escuro' : (map.hasLayer(limpoLayer) ? 'limpo' : 'normal'));
+      statusDiv.innerText = 'Camada: ' + active + ' – Marcadores: ' + marcadores.length;
       console.log('[carregarMarcadores] camada ativa:', active, 'marcadores adicionados =', marcadores.length, 'map.has normal?', map.hasLayer(normalLayer), 'map.has limpo?', map.hasLayer(limpoLayer));
     } catch (e) {
       console.warn('Não foi possível atualizar painel de status:', e);
@@ -302,6 +252,37 @@ adicionarMarcador(
 
   // === INICIALIZA COM MARCADORES DO MAPA NORMAL ===
   carregarMarcadores("normal");
+
+  // === CARREGA TRILHAS PRÉ-DEFINIDAS DO BACKEND ===
+  (function carregarTrilhasPredefinidas() {
+    try {
+      var url = 'api/trails.php';
+      var fetcher = (typeof fetch === 'function')
+        ? fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        : new Promise(function (resolve, reject) {
+            try {
+              var xhr = new XMLHttpRequest();
+              xhr.open('GET', url, true);
+              xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                  if (xhr.status >= 200 && xhr.status < 300) {
+                    try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(e); }
+                  } else { reject(new Error('HTTP ' + xhr.status)); }
+                }
+              };
+              xhr.send();
+            } catch (e) { reject(e); }
+          });
+      fetcher.then(function (lista) {
+        if (window.GpxLoader && Array.isArray(lista)) {
+          window.GpxLoader.addMarkersForTrails(lista);
+          console.log('[map.js] trilhas pré-definidas carregadas:', lista.length);
+        }
+      }).catch(function (e) {
+        console.warn('Não foi possível carregar trilhas pré-definidas:', e);
+      });
+    } catch (e) { console.warn('Falha ao iniciar carregamento de trilhas:', e); }
+  })();
 
   // === EVENTO PARA TROCAR ESTILO DO MAPA ===
   // Attach the listener directly to the select to avoid catching unrelated change events
@@ -313,11 +294,12 @@ adicionarMarcador(
       // Remove todas as bases e adiciona só a escolhida (garante 1 base ativa)
       if (map.hasLayer(normalLayer)) map.removeLayer(normalLayer);
       if (map.hasLayer(limpoLayer))  map.removeLayer(limpoLayer);
-      // darkLayer may not exist in this project; guard to avoid ReferenceError
-      if (typeof darkLayer !== 'undefined' && map.hasLayer(darkLayer)) map.removeLayer(darkLayer);
+      if (map.hasLayer(darkLayer))   map.removeLayer(darkLayer);
 
       if (tipo === 'limpo') {
         limpoLayer.addTo(map);
+      } else if (tipo === 'escuro') {
+        darkLayer.addTo(map);
       } else {
         normalLayer.addTo(map);
       }
@@ -325,6 +307,9 @@ adicionarMarcador(
       console.log('[mapSelect.change] selecionado =', tipo);
       try {
         carregarMarcadores(tipo);
+        if (window.GpxLoader && typeof window.GpxLoader.updateIconsForTheme === 'function') {
+          try { window.GpxLoader.updateIconsForTheme(); } catch (e) { console.warn('Falha ao atualizar ícones GPX:', e); }
+        }
       } catch (err) {
         console.error('Erro ao recarregar marcadores após troca de mapa:', err);
         // mostrar alerta visual para o usuário
