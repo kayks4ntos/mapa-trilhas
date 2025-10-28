@@ -23,17 +23,24 @@
     lastPos: null,
     simulating: false,
     _simTimer: null,
-    _baseTitle: document.title
+    _baseTitle: document.title,
+    _indicatorHideTimer: null
   };
 
   // Estilos para indicador visual
   try {
     var css = document.createElement('style');
     css.textContent = `
-      .rec-indicator { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 2200; background: rgba(0,0,0,0.75); color: #fff; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+      .rec-indicator { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 2200; background: rgba(0,0,0,0.75); color: #fff; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); transition: opacity .3s ease; }
       .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #f44336; opacity: 0.9; }
       .rec-live .rec-dot { animation: rec-blink 1s infinite; }
       @keyframes rec-blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
+      .rec-btn { padding: 6px 10px; border-radius: 8px; border: 1px solid #d0d0d0; background:#fff; cursor:pointer; font-weight:600; }
+      .rec-btn.primary { background:#4caf50; border-color:#43a047; color:#fff; }
+      .rec-btn.danger { background:#f44336; border-color:#e53935; color:#fff; }
+      .rec-btn.ghost { background:transparent; border-color:#bbb; }
+      .rec-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+      .rec-group { display:flex; gap:8px; align-items:center; }
     `;
     document.head.appendChild(css);
   } catch (e) {}
@@ -96,6 +103,8 @@
   function updateIndicator() {
     var txt = document.getElementById('recIndicatorText');
     indicator.classList.remove('rec-live');
+    indicator.style.display = 'flex';
+    if (rec._indicatorHideTimer) { try { clearTimeout(rec._indicatorHideTimer); } catch(e){} rec._indicatorHideTimer = null; }
     if (rec.state === 'recording') {
       indicator.classList.add('rec-live');
       if (txt) txt.textContent = 'GRAVANDO';
@@ -106,6 +115,10 @@
     } else if (rec.state === 'stopped') {
       if (txt) txt.textContent = 'FINALIZADO';
       document.title = rec._baseTitle;
+      // oculta indicador após alguns segundos
+      rec._indicatorHideTimer = setTimeout(function(){
+        try { indicator.style.display = 'none'; } catch(e){}
+      }, 4000);
     } else {
       if (txt) txt.textContent = 'Pronto';
       document.title = rec._baseTitle;
@@ -316,6 +329,8 @@
     document.body.appendChild(a);
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 0);
+    // após salvar o GPX, ofereça imagem para compartilhar
+    try { saveShareImage(); } catch (e) { console.warn('Falha ao gerar imagem de compartilhamento', e); }
   }
 
   // Controle UI
@@ -329,17 +344,24 @@
       try { L.DomEvent.disableScrollPropagation(div); } catch (e) {}
     }
     div.innerHTML = `
-      <div style="display:flex; gap:6px; align-items:center;">
-        <button id="recStart"  style="padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#4caf50; color:#fff; cursor:pointer;">Gravar</button>
-        <button id="recPause"  style="padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;">Pausar</button>
-        <button id="recResume" style="padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;">Continuar</button>
-        <button id="recStop"   style="padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#f44336; color:#fff; cursor:pointer;">Parar</button>
-        <button id="recSave"   style="padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;">Salvar GPX</button>
-        <button id="recReset"  style="padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;">Resetar</button>
-        <label style="display:flex; align-items:center; gap:6px; margin-left:8px; font-size:12px;">
-          <input id="recFollow" type="checkbox" checked /> Seguir
-        </label>
-        <button id="recSimulate" style="margin-left:8px; padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;">Simular Canal</button>
+      <div class="rec-row">
+        <div class="rec-group">
+          <button id="recStart"  class="rec-btn primary">Gravar</button>
+          <button id="recPause"  class="rec-btn">Pausar</button>
+          <button id="recResume" class="rec-btn">Continuar</button>
+          <button id="recStop"   class="rec-btn danger">Parar</button>
+        </div>
+        <div class="rec-group">
+          <button id="recSave"   class="rec-btn">Salvar GPX</button>
+          <button id="recSaveImg" class="rec-btn">Salvar Imagem</button>
+          <button id="recReset"  class="rec-btn ghost">Resetar</button>
+        </div>
+        <div class="rec-group">
+          <label style="display:flex; align-items:center; gap:6px; font-size:12px;">
+            <input id="recFollow" type="checkbox" checked /> Seguir
+          </label>
+          <button id="recSimulate" class="rec-btn">Simular Canal</button>
+        </div>
       </div>
     `;
 
@@ -349,6 +371,7 @@
       div.querySelector('#recResume').addEventListener('click', resumeRecording);
       div.querySelector('#recStop').addEventListener('click', stopRecording);
       div.querySelector('#recSave').addEventListener('click', saveGpx);
+      div.querySelector('#recSaveImg').addEventListener('click', function(){ try { saveShareImage(); } catch(e){ console.warn('Erro ao salvar imagem', e);} });
       div.querySelector('#recReset').addEventListener('click', resetRecording);
       var chk = div.querySelector('#recFollow');
       chk.addEventListener('change', function (e) { rec.follow = !!e.target.checked; });
@@ -373,20 +396,25 @@
     var resume = document.getElementById('recResume');
     var stop = document.getElementById('recStop');
     var save = document.getElementById('recSave');
+    var saveImg = document.getElementById('recSaveImg');
     var reset = document.getElementById('recReset');
     var sim = document.getElementById('recSimulate');
     if (!start) return;
     if (s === 'idle') {
       start.disabled = false; pause.disabled = true; resume.disabled = true; stop.disabled = true; save.disabled = true; reset.disabled = false;
+      if (saveImg) saveImg.disabled = true;
       if (sim) sim.disabled = false;
     } else if (s === 'recording') {
       start.disabled = true; pause.disabled = false; resume.disabled = true; stop.disabled = false; save.disabled = true; reset.disabled = true;
+      if (saveImg) saveImg.disabled = true;
       if (sim) sim.disabled = true;
     } else if (s === 'paused') {
       start.disabled = true; pause.disabled = true; resume.disabled = false; stop.disabled = false; save.disabled = (rec.points.length === 0); reset.disabled = false;
+      if (saveImg) saveImg.disabled = (rec.points.length === 0);
       if (sim) sim.disabled = true;
     } else if (s === 'stopped') {
       start.disabled = true; pause.disabled = true; resume.disabled = true; stop.disabled = true; save.disabled = (rec.points.length === 0); reset.disabled = false;
+      if (saveImg) saveImg.disabled = (rec.points.length === 0);
       if (sim) sim.disabled = false;
     }
   }
@@ -467,4 +495,191 @@
     getState: function () { return rec.state; },
     simulateCanal: simulateCanal
   };
+
+  // ==== Geração de imagem + overlay de compartilhamento ====
+  function generateShareImage() {
+    if (!rec.points || rec.points.length < 2) { alert('Grave uma trilha para gerar imagem.'); return null; }
+    var w = 1080, h = 1080; // formato quadrado (Instagram)
+    var margin = 80;
+    var bgStart = '#0f2027', bgEnd = '#203a43'; // gradiente escuro elegante
+
+    var coords = rec.points.map(function(p){ return [p.lat, p.lon]; });
+    var minLat=Infinity, maxLat=-Infinity, minLon=Infinity, maxLon=-Infinity;
+    coords.forEach(function(c){ if(c[0]<minLat) minLat=c[0]; if(c[0]>maxLat) maxLat=c[0]; if(c[1]<minLon) minLon=c[1]; if(c[1]>maxLon) maxLon=c[1]; });
+    var spanLat = Math.max(1e-9, maxLat - minLat);
+    var spanLon = Math.max(1e-9, maxLon - minLon);
+    var innerW = w - margin*2, innerH = h - margin*2;
+    var scaleX = innerW / spanLon;
+    var scaleY = innerH / spanLat;
+    var scale = Math.min(scaleX, scaleY);
+    function toXY(lat, lon){
+      var x = (lon - minLon) * scale + margin + (innerW - (spanLon*scale)) / 2;
+      var y = (maxLat - lat) * scale + margin + (innerH - (spanLat*scale)) / 2;
+      return [x, y];
+    }
+
+    var canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    var grad = ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0, bgStart); grad.addColorStop(1, bgEnd);
+    ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = 'bold 44px Arial, sans-serif';
+    ctx.fillText('Minha Trilha', margin, margin - 24);
+    ctx.font = 'normal 20px Arial, sans-serif';
+    var nowStr = new Date().toLocaleString();
+    ctx.fillText(nowStr, margin, h - margin + 50);
+    var path = coords.map(function(c){ return toXY(c[0], c[1]); });
+    if (path.length >= 2) {
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 18;
+      ctx.beginPath(); ctx.moveTo(path[0][0], path[0][1]);
+      for (var i=1;i<path.length;i++){ ctx.lineTo(path[i][0], path[i][1]); }
+      ctx.stroke();
+      ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 10;
+      ctx.beginPath(); ctx.moveTo(path[0][0], path[0][1]);
+      for (var j=1;j<path.length;j++){ ctx.lineTo(path[j][0], path[j][1]); }
+      ctx.stroke();
+      var start = path[0], end = path[path.length-1];
+      ctx.fillStyle = '#66bb6a'; ctx.beginPath(); ctx.arc(start[0], start[1], 10, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ef5350'; ctx.beginPath(); ctx.arc(end[0], end[1], 10, 0, Math.PI*2); ctx.fill();
+    }
+    var distKm = parseFloat(fmtKm(rec.distance));
+    var totalSec = Math.max(1, Math.floor(elapsedMs()/1000));
+    var timeStr = fmtTime(totalSec*1000);
+    var speedKmh = parseFloat(fmtKmh(rec.distance / totalSec));
+    // Pace (min/km)
+    var paceSecPerKm = (distKm > 0) ? Math.round(totalSec / distKm) : 0;
+    var paceMin = Math.floor(paceSecPerKm / 60);
+    var paceSec = paceSecPerKm % 60;
+    var paceStr = (distKm > 0) ? (String(paceMin).padStart(2,'0') + ':' + String(paceSec).padStart(2,'0') + ' /km') : '--:-- /km';
+    var statsY = h - margin - 20;
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.font = 'bold 32px Arial, sans-serif';
+    ctx.fillText('Distância: ' + distKm + ' km', margin, statsY);
+    ctx.fillText('Tempo: ' + timeStr, margin + 360, statsY);
+    ctx.fillText('Velocidade: ' + speedKmh + ' km/h', margin + 630, statsY);
+    ctx.fillText('Ritmo: ' + paceStr, margin, statsY + 42);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = 'bold 24px Arial, sans-serif';
+    var mark = 'Mapa-Trilhas';
+    var tw = ctx.measureText(mark).width;
+    ctx.fillText(mark, w - margin - tw, margin);
+
+    var dataUrl = canvas.toDataURL('image/png');
+    try {
+      var bin = atob(dataUrl.split(',')[1]);
+      var len = bin.length; var bytes = new Uint8Array(len);
+      for (var k=0; k<len; k++) bytes[k] = bin.charCodeAt(k);
+      var blob = new Blob([bytes], { type: 'image/png' });
+      var ts = new Date().toISOString().replace(/[:T]/g, '-').slice(0,16);
+      var filename = 'trilha-imagem-' + ts + '.png';
+      return { dataUrl: dataUrl, blob: blob, filename: filename };
+    } catch (e) {
+      return { dataUrl: dataUrl, blob: null, filename: 'trilha.png' };
+    }
+  }
+
+  function ensureShareOverlay() {
+    if (document.getElementById('shareOverlay')) return;
+    var css = document.createElement('style');
+    css.textContent += `
+      .share-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+      .share-modal { background: #111; color:#fff; width: min(92vw, 980px); max-height: 92vh; display:flex; flex-direction: column; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
+      .share-header { display:flex; justify-content: space-between; align-items:center; padding: 12px 16px; background:#1c1c1c; }
+      .share-title { font-weight:700; }
+      .share-close { cursor:pointer; border:none; background:transparent; color:#fff; font-size:20px; }
+      .share-body { padding: 12px 16px; display:flex; gap:16px; align-items:center; justify-content:center; flex:1; overflow:auto; }
+      .share-body img { max-width: min(90vw, 820px); max-height: 60vh; width: auto; height: auto; border-radius: 10px; box-shadow: 0 6px 14px rgba(0,0,0,0.45); }
+      .share-actions { padding: 12px 16px; display:flex; gap:10px; flex-wrap:wrap; border-top: 1px solid #2a2a2a; background:#151515; position: sticky; bottom: 0; }
+      .share-btn { padding:10px 14px; border-radius: 10px; border:1px solid #3a3a3a; background:#222; color:#fff; cursor:pointer; font-weight:600; }
+      .share-btn.primary { background:#4caf50; border-color:#43a047; }
+    `;
+    document.head.appendChild(css);
+
+    var overlay = document.createElement('div');
+    overlay.id = 'shareOverlay';
+    overlay.className = 'share-overlay';
+    overlay.innerHTML = `
+      <div class="share-modal" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+        <div class="share-header">
+          <div id="shareTitle" class="share-title">Compartilhar trilha</div>
+          <button class="share-close" id="shareClose">×</button>
+        </div>
+        <div class="share-body">
+          <img id="shareImg" alt="Trilha gerada" />
+        </div>
+        <div class="share-actions">
+          <button class="share-btn primary" id="shareNative">Compartilhar…</button>
+          <button class="share-btn" id="shareDownload">Baixar</button>
+          <button class="share-btn" id="shareCopy">Copiar imagem</button>
+          <button class="share-btn" id="shareInstagram">Instagram</button>
+          <button class="share-btn" id="shareWhatsapp">WhatsApp</button>
+          <button class="share-btn" id="shareClose2">Fechar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    function close() { try { overlay.remove(); } catch(e){} }
+    overlay.querySelector('#shareClose').addEventListener('click', close);
+    overlay.querySelector('#shareClose2').addEventListener('click', close);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
+    window.addEventListener('keydown', function onKey(e){ if (e.key === 'Escape') { close(); window.removeEventListener('keydown', onKey); } });
+  }
+
+  function showShareOverlay(data) {
+    ensureShareOverlay();
+    var overlay = document.getElementById('shareOverlay');
+    var img = overlay.querySelector('#shareImg');
+    img.src = data.dataUrl;
+    var dlBtn = overlay.querySelector('#shareDownload');
+    dlBtn.onclick = function(){
+      var a = document.createElement('a');
+      a.download = data.filename || 'trilha.png';
+      a.href = data.dataUrl; a.style.display='none'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    };
+    var copyBtn = overlay.querySelector('#shareCopy');
+    copyBtn.onclick = async function(){
+      try {
+        if (navigator.clipboard && window.ClipboardItem && data.blob) {
+          await navigator.clipboard.write([ new ClipboardItem({ 'image/png': data.blob }) ]);
+          alert('Imagem copiada para a área de transferência.');
+        } else {
+          alert('Cópia de imagem não suportada neste navegador. Baixe a imagem e compartilhe manualmente.');
+        }
+      } catch (e) { alert('Não foi possível copiar a imagem.'); }
+    };
+    var shareBtn = overlay.querySelector('#shareNative');
+    shareBtn.onclick = async function(){
+      try {
+        if (navigator.share) {
+          if (navigator.canShare && data.blob) {
+            var file = new File([data.blob], data.filename || 'trilha.png', { type: 'image/png' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title: 'Minha trilha', text: 'Minha trilha no Mapa-Trilhas' });
+              return;
+            }
+          }
+          await navigator.share({ title: 'Minha trilha', text: 'Minha trilha no Mapa-Trilhas' });
+        } else {
+          alert('Compartilhamento nativo não suportado. Use Baixar/Copiar.');
+        }
+      } catch (e) { /* usuário pode cancelar o share */ }
+    };
+    var instaBtn = overlay.querySelector('#shareInstagram');
+    instaBtn.onclick = function(){ window.open('https://www.instagram.com/', '_blank'); };
+    var waBtn = overlay.querySelector('#shareWhatsapp');
+    waBtn.onclick = function(){
+      var msg = encodeURIComponent('Minha trilha no Mapa-Trilhas');
+      window.open('https://api.whatsapp.com/send?text=' + msg, '_blank');
+    };
+  }
+
+  function saveShareImage() {
+    var data = generateShareImage();
+    if (!data) return;
+    showShareOverlay(data);
+  }
 })();
