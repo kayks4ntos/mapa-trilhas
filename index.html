@@ -10,12 +10,18 @@
 
   <!-- CSS do plugin de localização -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol@0.78.0/dist/L.Control.Locate.min.css" />
+  <!-- Fonte e estilos do site -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
 
   <style>
     *{
       
     }
-    #map { height: 100vh; width: 100%; }
+    /* altura base do mapa no site; demais estilos em css/styles.css */
+    #map { height: 75vh; width: 100%; }
 
     .leaflet-control-zoom a,
     .leaflet-control-locate a {
@@ -57,7 +63,46 @@
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">Mapa-Trilhas</div>
+      <nav id="siteNav" class="nav">
+        <a href="#home" class="nav-link">Home</a>
+        <a href="#mapSection" class="nav-link">Mapa</a>
+        <a href="#trails" class="nav-link">Trilhas</a>
+      </nav>
+      <button id="navToggle" class="nav-toggle" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="home" class="hero">
+      <div class="container hero-inner">
+        <h1>Descubra trilhas incríveis</h1>
+        <p>Explore trilhas, registre sua aventura e compartilhe seu percurso.</p>
+        <div class="search-box">
+          <input id="trailSearch" type="text" placeholder="Busque por trilhas (ex.: Canal dos Ingleses)" />
+          <button id="searchBtn">Buscar</button>
+        </div>
+        <div class="hero-actions">
+          <a href="#mapSection" class="btn-primary">Explorar no mapa</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="mapSection" class="map-section">
+      <div class="container map-container">
+        <aside id="resultsPanel" class="results-panel" aria-label="Resultados de trilhas">
+          <div class="panel-header">
+            <strong>Trilhas</strong>
+            <button id="panelClose" title="Fechar">×</button>
+          </div>
+          <ul id="trailResults" class="results-list"></ul>
+        </aside>
+        <div id="map"></div>
+      </div>
+    </section>
+  </main>
 
   <!-- JS principal do Leaflet -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -71,5 +116,7 @@
   <script src="js/gps.js"></script>
   <!-- Gravador de trilhas (start/pause/stop/save + seguir usuário) -->
   <script src="js/recorder.js"></script>
+  <!-- UI do site (busca, navegação, lista de trilhas) -->
+  <script src="js/ui.js"></script>
 </body>
 </html>

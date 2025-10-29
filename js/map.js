@@ -277,6 +277,11 @@ adicionarMarcador(
         if (window.GpxLoader && Array.isArray(lista)) {
           window.GpxLoader.addMarkersForTrails(lista);
           console.log('[map.js] trilhas pré-definidas carregadas:', lista.length);
+          try { window.TrailsData = lista; } catch (e) {}
+          try {
+            var ev = new Event('trails:loaded');
+            window.dispatchEvent(ev);
+          } catch (e) {}
         }
       }).catch(function (e) {
         console.warn('Não foi possível carregar trilhas pré-definidas:', e);

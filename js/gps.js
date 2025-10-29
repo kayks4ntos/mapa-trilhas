@@ -7,6 +7,7 @@
 
   var gpxLayerGroup = L.featureGroup().addTo(map);
   var gpxMarkerGroup = L.featureGroup().addTo(map); // marcadores de trilhas pré-definidas
+  var trailIndex = {}; // id -> { marker, data }
 
   function textOf(node, selector) {
     var el = node && node.querySelector ? node.querySelector(selector) : null;
@@ -155,6 +156,7 @@
   function addMarkersForTrails(trails) {
     if (!Array.isArray(trails)) return;
     gpxMarkerGroup.clearLayers();
+    trailIndex = {};
     trails.forEach(function (t) {
       var lat = (typeof t.lat === 'number') ? t.lat : parseFloat(t.lat);
       var lon = (typeof t.lon === 'number') ? t.lon : parseFloat(t.lon);
@@ -192,6 +194,8 @@
         }
       });
       marker.addTo(gpxMarkerGroup);
+      var tid = t.id != null ? String(t.id) : (t.nome || t.name || (lat+','+lon));
+      trailIndex[tid] = { marker: marker, data: t };
     });
     try {
       var b = gpxMarkerGroup.getBounds();
@@ -298,6 +302,23 @@
           }
         });
       } catch (e) {}
+    },
+    focusTrail: function (id, opts) {
+      var key = id != null ? String(id) : null;
+      var item = key ? trailIndex[key] : null;
+      if (!item) return false;
+      try {
+        var m = item.marker;
+        var p = m.getLatLng();
+        map.setView(p, Math.max(map.getZoom(), 15));
+        m.openPopup();
+        if (opts && opts.loadGpx && item.data && item.data.gpx_url) {
+          var url = String(item.data.gpx_url);
+          if (url.startsWith('./')) url = url.slice(1);
+          loadGpxFromUrl(url, { label: item.data.nome || item.data.name || 'Trilha' }).catch(function(){});
+        }
+      } catch (e) {}
+      return true;
     },
     _groups: { tracks: gpxLayerGroup, markers: gpxMarkerGroup }
   };
